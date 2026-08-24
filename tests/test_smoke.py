@@ -14,7 +14,7 @@ class AttackSmokeTest(unittest.TestCase):
         self.graph = graph_from_edges("test", edges)
 
     def test_all_strategies_finish(self) -> None:
-        for index, strategy in enumerate(STRATEGIES):
+        for strategy in STRATEGIES:
             rows, summary = run_attack(
                 self.graph,
                 strategy,
@@ -22,16 +22,33 @@ class AttackSmokeTest(unittest.TestCase):
                 efficiency_sources=6,
                 betweenness_samples=6,
                 weighted_betweenness_samples=6,
-                seed=41 + index,
             )
             self.assertEqual(rows[0]["EWLCC_prime"], 1.0)
             self.assertGreaterEqual(summary["final_step"], 1.0)
             self.assertTrue(all(math.isfinite(value) for value in summary.values()))
 
-    def test_fixed_seed_is_repeatable(self) -> None:
-        left = run_attack(self.graph, "RRN", efficiency_pairs=30, efficiency_sources=6, seed=7)
-        right = run_attack(self.graph, "RRN", efficiency_pairs=30, efficiency_sources=6, seed=7)
-        self.assertEqual(left, right)
+    def test_output_schema(self) -> None:
+        rows, summary = run_attack(
+            self.graph,
+            "MaxWDRN",
+            efficiency_pairs=30,
+            efficiency_sources=6,
+        )
+        self.assertEqual(
+            set(rows[0]),
+            {"Step", "RN", "REW", "EWLCC_prime", "Ee_prime", "LCC_size", "active_count"},
+        )
+        self.assertEqual(
+            set(summary),
+            {
+                "auc_EWLCC_by_Step",
+                "auc_EWLCC_by_RN",
+                "auc_Ee_by_Step",
+                "auc_Ee_by_RN",
+                "final_step",
+                "final_RN",
+            },
+        )
 
 if __name__ == "__main__":
     unittest.main()
